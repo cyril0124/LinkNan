@@ -206,7 +206,7 @@ function emu_run()
   if os.exists(sim_emu) then os.rm(sim_emu) end
   os.ln(path.join(abs_dir, "sim", "emu", "comp", "emu"), sim_emu)
   os.cd(sim_dir)
-  local sh_str = "chmod +x emu" .. " && ( ./emu"
+  local sh_str = "chmod +x emu" .. " && ( ./emu" --  numactl -m 0 -C 0-20
   if option.get("dump") then
     sh_str = sh_str .. " --dump-wave"
     if(wave_begin ~= "0") then sh_str = sh_str .. " -b " .. wave_begin end
