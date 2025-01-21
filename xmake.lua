@@ -23,7 +23,8 @@ task("soc" , function()
       {'j', "jobs", "kv", "16", "post-compile process jobs"}
     }
   }
-  local chisel_opts =  {"mill", "-i"}
+  -- local chisel_opts =  {"mill", "-i"}
+  local chisel_opts =  {"-i"}
 
   on_run(function()
     import("core.base.option")
@@ -46,7 +47,8 @@ task("soc" , function()
     if option.get("sim") then os.setenv("NOOP_HOME", os.curdir()) end
     table.join2(chisel_opts, {"--target", "systemverilog", "--full-stacktrace"})
     table.join2(chisel_opts, {"-td", build_dir})
-    os.execv(os.shell(), chisel_opts)
+    -- os.execv(os.shell(), chisel_opts)
+    os.execv("mill", chisel_opts)
 
     os.rm(path.join(build_dir, "firrtl_black_box_resource_files.f"))
     os.rm(path.join(build_dir, "filelist.f"))

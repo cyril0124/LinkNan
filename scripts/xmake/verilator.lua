@@ -22,10 +22,20 @@ function emu_comp(num_cores)
     dependfile = path.join("out", "chisel.verilator.dep"),
     dryrun = option.get("rebuild")
   })
+
+  local files = os.files("./build/rtl/*.sv")
+  table.insert(files, "./dependencies/difftest/src/test/vsrc/common/assert.sv")
+  table.insert(files, "./dependencies/difftest/src/test/vsrc/common/SimJTAG.sv")
+  os.exec("rm ./build/.dpi_exporter/* -rf")
+  os.exec("dpi_exporter --config ./scripts/verilua/dpi_cfg.lua --out-dir ./build/.dpi_exporter --work-dir ./build/.dpi_exporter --top SimTop " .. table.concat(files, " "))
+  os.exec("rm ./build/.dpi_exporter/assert.sv")
+  os.exec("rm ./build/.dpi_exporter/SimJTAG.sv")
+
   local comp_dir = path.join(abs_base, "sim", "emu", "comp")
   local comp_target = path.join(comp_dir, "emu")
   if not os.exists(comp_dir) then os.mkdir(comp_dir) end
-  local design_vsrc = path.join(abs_base, "build", "rtl")
+  -- local design_vsrc = path.join(abs_base, "build", "rtl")
+  local design_vsrc = path.join(abs_base, "build", ".dpi_exporter")
   local design_csrc = path.join(abs_base, "build", "generated-src")
   local difftest = path.join(abs_base, "dependencies", "difftest")
   local difftest_vsrc = path.join(difftest, "src", "test", "vsrc")
@@ -102,20 +112,12 @@ function emu_comp(num_cores)
   local f = string.format
   local verilator_bin = "verilator"
   if option.get("lua_scoreboard") then
-    verilator_bin = "vl-verilator-p"
+    verilator_bin = "vl-verilator-dpi"
   end
 
   local verilator_flags = f("%s --exe --cc --top-module SimTop --assert --x-assign unique", verilator_bin)
   if option.get("lua_scoreboard") then
-    io.writefile("$(tmpdir)/ln_config.vlt", [[
-`verilator_config
-public_flat_rd -module "SimTop" -var "timer"
-public_flat_rd -module "SimpleL2CacheDecoupled" -var "*"
-public_flat_rd -module "ProtocolCtrlUnit" -var "*"
-public_flat_rd -module "DataCtrlUnit" -var "*"
-public_flat_rd -module "MemoryComplex" -var "*"
-]])
-    verilator_flags = verilator_flags .. " " .. path.join(os.tmpdir(), "ln_config.vlt")
+    verilator_flags = verilator_flags .. " " .. abs_base .. "/build/.dpi_exporter/dpi_func.cpp"
   end
 
   verilator_flags = verilator_flags .. " +define+VERILATOR=1 +define+PRINTF_COND=1"
@@ -206,7 +208,7 @@ function emu_run()
   if os.exists(sim_emu) then os.rm(sim_emu) end
   os.ln(path.join(abs_dir, "sim", "emu", "comp", "emu"), sim_emu)
   os.cd(sim_dir)
-  local sh_str = "chmod +x emu" .. " && ( ./emu"
+  local sh_str = "chmod +x emu" .. " && ( ./emu" -- numactl -m 0 -C 0-20
   if option.get("dump") then
     sh_str = sh_str .. " --dump-wave"
     if(wave_begin ~= "0") then sh_str = sh_str .. " -b " .. wave_begin end
