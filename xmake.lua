@@ -217,3 +217,28 @@ task("clean", function()
   end)
   set_menu {}
 end)
+
+target("build_emu")
+  set_kind("phony")
+  on_run(function (target)
+    os.exec("bash build_emu.sh")
+
+    -- import("core.base.task")
+    -- task.run("emu", {
+    --   jobs = os.cpuinfo().ncpu,
+    --   dramsim3 = true,
+    --   lua_scoreboard = true,
+    --   no_perf = true,
+    --   cpu_sync = true
+    -- })
+    -- os.exec("mill -i linknan.test.runMain lntest.top.SimGenerator --split-verilog --enable-difftest --fpga-platform --cpu-sync --lua-scoreboard --dramsim3 --config minimal --target systemverilog --full-stacktrace -td build/rtl")
+  end)
+
+target("run_emu")
+  set_kind("phony")
+  on_run(function (target)
+    import("core.base.task")
+    task.run("emu-run", {
+      image = assert(os.getenv("IMAGE"), "IMAGE is not set"),
+    })
+  end)
