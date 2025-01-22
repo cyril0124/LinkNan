@@ -118,7 +118,8 @@ function simv_comp(num_cores)
   if option.get("lua_scoreboard") then
     vcs_flags = "vl-vcs " .. vcs_flags
   else
-    vcs_flags = "vcs " .. vcs_flags
+    -- vcs_flags = "vcs " .. vcs_flags
+    vcs_flags = vcs_flags .. " +vcs+initreg+random"
   end
 
   if option.get("core") == "boom" then
@@ -182,7 +183,7 @@ function simv_run()
   os.ln(path.join(abs_dir, "sim", "simv", "comp", "simv"), simv)
   os.ln(path.join(abs_dir, "sim", "simv", "comp", "simv.daidir"), daidir)
   os.cd(sim_dir)
-  local sh_str = "chmod +x simv" .. " && ( ./simv"
+  local sh_str = "chmod +x simv" .. " && ( ./simv +vcs+initreg+0 +notimingcheck"
   if not option.get("no_dump") then
     sh_str = sh_str .. " +dump-wave=fsdb"
   end
