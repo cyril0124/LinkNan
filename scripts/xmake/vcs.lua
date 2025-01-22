@@ -125,7 +125,8 @@ function simv_comp(num_cores)
     vcs_flags = vcs_flags .. " +define+RANDOMIZE_GARBAGE_ASSIGN +define+RANDOMIZE_DELAY=0"
     vcs_flags = vcs_flags .. " +define+RANDOMIZE_REG_INIT +define+RANDOMIZE_MEM_INIT"
   else
-    vcs_flags = vcs_flags .. " -xprop"
+    -- vcs_flags = vcs_flags .. " -xprop"
+    vcs_flags = vcs_flags .. " +vcs+initreg+random"
   end
 
   local cmd_file = path.join(comp_dir, "vcs_cmd.sh")
@@ -182,7 +183,7 @@ function simv_run()
   os.ln(path.join(abs_dir, "sim", "simv", "comp", "simv"), simv)
   os.ln(path.join(abs_dir, "sim", "simv", "comp", "simv.daidir"), daidir)
   os.cd(sim_dir)
-  local sh_str = "chmod +x simv" .. " && ( ./simv"
+  local sh_str = "chmod +x simv" .. " && ( ./simv +vcs+initreg+0 +notimingcheck"
   if not option.get("no_dump") then
     sh_str = sh_str .. " +dump-wave=fsdb"
   end

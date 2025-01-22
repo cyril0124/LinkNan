@@ -23,7 +23,7 @@ task("soc" , function()
       {'j', "jobs", "kv", "16", "post-compile process jobs"}
     }
   }
-  local chisel_opts =  {"-i"}
+  local chisel_opts = {"mill", "-i"}
 
   on_run(function()
     import("core.base.option")
@@ -46,7 +46,9 @@ task("soc" , function()
     if option.get("sim") then os.setenv("NOOP_HOME", os.curdir()) end
     table.join2(chisel_opts, {"--target", "systemverilog", "--full-stacktrace"})
     table.join2(chisel_opts, {"-td", build_dir})
-    os.execv("mill", chisel_opts)
+    
+    io.writefile("$(tmpdir)/build_soc.sh", table.concat(chisel_opts, " "))
+    os.exec("bash $(tmpdir)/build_soc.sh")
 
     os.rm(path.join(build_dir, "firrtl_black_box_resource_files.f"))
     os.rm(path.join(build_dir, "filelist.f"))
@@ -219,17 +221,14 @@ end)
 target("build_emu")
   set_kind("phony")
   on_run(function (target)
-    os.exec("bash build_emu.sh")
-
-    -- import("core.base.task")
-    -- task.run("emu", {
-    --   jobs = os.cpuinfo().ncpu,
-    --   dramsim3 = true,
-    --   lua_scoreboard = true,
-    --   no_perf = true,
-    --   cpu_sync = true
-    -- })
-    -- os.exec("mill -i linknan.test.runMain lntest.top.SimGenerator --split-verilog --enable-difftest --fpga-platform --cpu-sync --lua-scoreboard --dramsim3 --config minimal --target systemverilog --full-stacktrace -td build/rtl")
+    import("core.base.task")
+    task.run("emu", {
+      jobs = os.cpuinfo().ncpu,
+      dramsim3 = true,
+      lua_scoreboard = false,
+      no_perf = true,
+      cpu_sync = true
+    })
   end)
 
 target("run_emu")
@@ -238,5 +237,27 @@ target("run_emu")
     import("core.base.task")
     task.run("emu-run", {
       image = assert(os.getenv("IMAGE"), "IMAGE is not set"),
+    })
+  end)
+
+target("build_simv")
+  set_kind("phony")
+  on_run(function (target)
+    import("core.base.task")
+    task.run("simv", {
+      jobs = os.cpuinfo().ncpu,
+      lua_scoreboard = false,
+      cpu_sync = true,
+      no_fsdb = true
+    })
+  end)
+
+target("run_simv")
+  set_kind("phony")
+  on_run(function (target)
+    import("core.base.task")
+    task.run("simv-run", {
+      image = assert(os.getenv("IMAGE"), "IMAGE is not set"),
+      no_dump = true
     })
   end)
