@@ -28,9 +28,18 @@ function simv_comp(num_cores)
     dryrun = option.get("rebuild")
   })
 
+  local files = os.files("./build/rtl/*.sv")
+  table.insert(files, "./dependencies/difftest/src/test/vsrc/common/assert.sv")
+  table.insert(files, "./dependencies/difftest/src/test/vsrc/common/SimJTAG.sv")
+  os.exec("rm ./build/.dpi_exporter/* -rf")
+  os.exec("dpi_exporter --config ./scripts/verilua/dpi_cfg.lua --out-dir ./build/.dpi_exporter --work-dir ./build/.dpi_exporter --top SimTop " .. table.concat(files, " "))
+  os.exec("rm ./build/.dpi_exporter/assert.sv")
+  os.exec("rm ./build/.dpi_exporter/SimJTAG.sv")
+
   local comp_dir = path.join(abs_base, "sim", "simv", "comp")
   if not os.exists(comp_dir) then os.mkdir(comp_dir) end
-  local design_vsrc = path.join(abs_base, "build", "rtl")
+  -- local design_vsrc = path.join(abs_base, "build", "rtl")
+  local design_vsrc = path.join(abs_base, "build", ".dpi_exporter")
   local design_csrc = path.join(abs_base, "build", "generated-src")
   local difftest = path.join(abs_base, "dependencies", "difftest")
   local difftest_vsrc = path.join(difftest, "src", "test", "vsrc")
@@ -116,7 +125,7 @@ function simv_comp(num_cores)
   vcs_flags = vcs_flags .. " -f " .. vsrc_filelist_path
   vcs_flags = vcs_flags .. " -f " .. csrc_filelist_path
   if option.get("lua_scoreboard") then
-    vcs_flags = "vl-vcs " .. vcs_flags
+    vcs_flags = "vl-vcs-dpi " .. vcs_flags
   else
     vcs_flags = "vcs " .. vcs_flags
   end
@@ -125,7 +134,12 @@ function simv_comp(num_cores)
     vcs_flags = vcs_flags .. " +define+RANDOMIZE_GARBAGE_ASSIGN +define+RANDOMIZE_DELAY=0"
     vcs_flags = vcs_flags .. " +define+RANDOMIZE_REG_INIT +define+RANDOMIZE_MEM_INIT"
   else
-    vcs_flags = vcs_flags .. " -xprop"
+    -- vcs_flags = vcs_flags .. " -xprop"
+    vcs_flags = vcs_flags .. " +vcs+initreg+random"
+  end
+
+  if option.get("lua_scoreboard") then
+    vcs_flags = vcs_flags .. " " .. abs_base .. "/build/.dpi_exporter/dpi_func.cpp"
   end
 
   local cmd_file = path.join(comp_dir, "vcs_cmd.sh")
@@ -182,7 +196,7 @@ function simv_run()
   os.ln(path.join(abs_dir, "sim", "simv", "comp", "simv"), simv)
   os.ln(path.join(abs_dir, "sim", "simv", "comp", "simv.daidir"), daidir)
   os.cd(sim_dir)
-  local sh_str = "chmod +x simv" .. " && ( ./simv"
+  local sh_str = "chmod +x simv" .. " && ( ./simv +vcs+initreg+0 +notimingcheck"
   if not option.get("no_dump") then
     sh_str = sh_str .. " +dump-wave=fsdb"
   end

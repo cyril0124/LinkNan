@@ -1,1 +1,0 @@
-mill -i linknan.test.runMain lntest.top.SimGenerator --split-verilog --enable-difftest --fpga-platform --cpu-sync --lua-scoreboard --dramsim3 --config minimal --target systemverilog --full-stacktrace -td build/rtl
